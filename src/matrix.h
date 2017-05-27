@@ -14,6 +14,9 @@
 #include <istream>
 #include <ostream>
 
+// for usage mmap
+#include <sys/stat.h>
+
 #include "real.h"
 
 namespace fasttext {
@@ -21,6 +24,13 @@ namespace fasttext {
 class Vector;
 
 class Matrix {
+
+  private:
+    real* data_mem_;
+    void* data_mmap_;
+ 
+    int file_;
+    struct stat fileInfo;
 
   public:
     real* data_;
@@ -50,6 +60,7 @@ class Matrix {
 
     void save(std::ostream&);
     void load(std::istream&);
+    void load2mmap(std::istream&, const std::string&); // usage mmap
 };
 
 }
