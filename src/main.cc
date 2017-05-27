@@ -171,7 +171,7 @@ void printWordVectors(int argc, char** argv) {
     exit(EXIT_FAILURE);
   }
   FastText fasttext;
-  fasttext.loadModel(std::string(argv[2]));
+  fasttext.loadModel(std::string(argv[2]), true); // use mmap
   fasttext.printWordVectors();
   exit(0);
 }
@@ -182,7 +182,7 @@ void printSentenceVectors(int argc, char** argv) {
     exit(EXIT_FAILURE);
   }
   FastText fasttext;
-  fasttext.loadModel(std::string(argv[2]));
+  fasttext.loadModel(std::string(argv[2]), true); // use mmap
   fasttext.printSentenceVectors();
   exit(0);
 }

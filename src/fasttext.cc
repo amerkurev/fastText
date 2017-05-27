@@ -123,7 +123,7 @@ void FastText::saveModel() {
   ofs.close();
 }
 
-void FastText::loadModel(const std::string& filename) {
+void FastText::loadModel(const std::string& filename, bool use_mmap) {
   std::ifstream ifs(filename, std::ifstream::binary);
   if (!ifs.is_open()) {
     std::cerr << "Model file cannot be opened for loading!" << std::endl;
@@ -133,7 +133,11 @@ void FastText::loadModel(const std::string& filename) {
     std::cerr << "Model file has wrong file format!" << std::endl;
     exit(EXIT_FAILURE);
   }
-  loadModel(ifs);
+  if (use_mmap) {
+    loadModelMmap(ifs, filename);
+  } else {
+    loadModel(ifs);
+  }
   ifs.close();
 }
 
@@ -162,6 +166,44 @@ void FastText::loadModel(std::istream& in) {
     qoutput_->load(in);
   } else {
     output_->load(in);
+  }
+
+  model_ = std::make_shared<Model>(input_, output_, args_, 0);
+  model_->quant_ = quant_;
+  model_->setQuantizePointer(qinput_, qoutput_, args_->qout);
+
+  if (args_->model == model_name::sup) {
+    model_->setTargetCounts(dict_->getCounts(entry_type::label));
+  } else {
+    model_->setTargetCounts(dict_->getCounts(entry_type::word));
+  }
+}
+
+void FastText::loadModelMmap(std::istream& in, const std::string& filename) {
+  args_ = std::make_shared<Args>();
+  dict_ = std::make_shared<Dictionary>(args_);
+  input_ = std::make_shared<Matrix>();
+  output_ = std::make_shared<Matrix>();
+  qinput_ = std::make_shared<QMatrix>();
+  qoutput_ = std::make_shared<QMatrix>();
+  args_->load(in);
+
+  dict_->load(in);
+
+  bool quant_input;
+  in.read((char*) &quant_input, sizeof(bool));
+  if (quant_input) {
+    quant_ = true;
+    qinput_->load(in);
+  } else {
+    input_->load2mmap(in, filename);
+  }
+
+  in.read((char*) &args_->qout, sizeof(bool));
+  if (quant_ && args_->qout) {
+    qoutput_->load(in);
+  } else {
+    output_->load2mmap(in, filename);
   }
 
   model_ = std::make_shared<Model>(input_, output_, args_, 0);
